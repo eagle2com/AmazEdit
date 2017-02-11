@@ -1,0 +1,43 @@
+#pragma once
+#include "stdafx.h"
+#include "TextLine.h"
+#include "font.h"
+#include "ShapeRectangle.h"
+
+struct Cursor {
+	int pos;
+	std::list<TextLine>::iterator line;
+	double last_time;
+};
+
+class FileBuffer
+{
+public:
+	FileBuffer();
+	~FileBuffer();
+	void insert(unsigned char c);
+	void erase();
+	void backspace();
+	void cursor_left();
+	void cursor_right();
+	void cursor_set(int pos);
+	void cursor_end();
+	void cursor_beg();
+	void draw(PackedFont& font);
+	void add_line(const std::string& text);
+	void enter();
+	void key_up();
+	void key_down();
+	void tab();
+	bool load(const std::string& filename);
+	void wheel_up();
+	void wheel_down();
+
+	Shader* shape_shader;
+
+	std::list<TextLine> lines;
+	int first_line = 0;
+	ShapeRectangle cursor_shape;
+	std::vector<Cursor> cursors;
+};
+

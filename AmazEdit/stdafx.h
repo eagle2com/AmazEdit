@@ -10,6 +10,7 @@
 #ifdef WIN32
 #include <tchar.h>
 #include <Windows.h>
+#include <stdint.h>
 #endif
 
 #include <iostream>
@@ -19,6 +20,11 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include <list>
+#include <algorithm>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -40,6 +46,11 @@ using std::cin;
 using std::endl;
 using std::cerr;
 
+const int CHAR_ADVANCE = 7;
+const int CHAR_LINE_HEIGHT = 13;
+
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
 
 
 // TODO: reference additional headers your program requires here
