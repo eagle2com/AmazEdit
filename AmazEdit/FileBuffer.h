@@ -7,7 +7,9 @@
 struct Cursor {
 	int pos;
 	std::list<TextLine>::iterator line;
+	int line_n;
 	double last_time;
+	int max_up_down;
 };
 
 class FileBuffer
@@ -20,7 +22,6 @@ public:
 	void backspace();
 	void cursor_left();
 	void cursor_right();
-	void cursor_set(int pos);
 	void cursor_end();
 	void cursor_beg();
 	void draw(PackedFont& font);

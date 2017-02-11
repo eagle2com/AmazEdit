@@ -182,7 +182,7 @@ int main(int, const char**)
 	main_font.load("C:/Windows/fonts/consola.ttf", 12);
 	main_font.shader = &shader;
 
-	file_buffer.shape_shader = &shape_shader;
+	file_buffer.cursor_shape.shader = &shape_shader;
 	file_buffer.load("FileBuffer.cpp");
 
     // Game loop

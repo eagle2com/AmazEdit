@@ -9,17 +9,6 @@ public:
 	TextLine();
 	~TextLine();
 
-	void set(const std::string& text);
-	void insert(unsigned char c);
-	void insert(const std::string& str);
-	void erase();
-	void backspace();
-	void cursor_left();
-	void cursor_right();
-	void cursor_set(int pos);
-	void cursor_end();
-	void cursor_beg();
-
 	void draw(PackedFont& font, GLfloat x, GLfloat y);
 	void update(PackedFont& font);
 

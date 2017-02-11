@@ -34,88 +34,6 @@ void TextLine::draw(PackedFont& font, GLfloat x, GLfloat y) {
 	glDrawArrays(GL_TRIANGLES, 0, 6*text.length());
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	double time = glfwGetTime();
-
-	// draw cursor
-	//if (cursor >= 0) {
-
-		double color = 0.5 + 0.5*cos(M_PI*(time - cursor_last_time));
-		if (cursor < 0)
-			color = 0;
-		cursor_shape.set_fill_color({ 1.0, 1.0, 1.0, color });
-		cursor_shape.set_position(x + CHAR_ADVANCE * cursor, y - 3); // @HARDCODE: use character advance and size
-	//}
-	cursor_shape.draw();
-}
-
- void TextLine::set(const std::string& text) {
-	this->text = text;
-	dirty = true;
-}
-
-void TextLine::insert(unsigned char c) {
-	if (cursor >= 0) {
-		text.insert(text.begin() + cursor, c);
-		dirty = true;
-		cursor++;
-	}
-}
-
-void TextLine::insert(const std::string & str)
-{
-	if (cursor >= 0) {
-		text.insert(cursor, str);
-		dirty = true;
-		cursor += str.length();
-	}
-}
-
-void TextLine::backspace() {
-	if (!text.empty() && cursor - 1 >= 0) {
-		text.erase(cursor - 1, 1);
-		dirty = true;
-		cursor--;
-	}
-}
-
-void TextLine::erase() {
-	if (!text.empty() && cursor >= 0) {
-		text.erase(cursor, 1);
-		dirty = true;
-	}
-}
-
-void TextLine::cursor_set(int pos) {
-	if (pos > (int)text.length())
-		pos = text.length();
-
-	cursor = pos;
-	cursor_last_time = glfwGetTime();
-}
-
-void TextLine::cursor_left() {
-	cursor--;
-	if (cursor < 0)
-		cursor = 0;
-	cursor_last_time = glfwGetTime();
-}
-
-void TextLine::cursor_right() {
-	cursor++;
-	if (cursor > (int)text.length())
-		cursor = text.length();
-	cursor_last_time = glfwGetTime();
-}
-
-void TextLine::cursor_end() {
-	cursor = text.length();
-	cursor_last_time = glfwGetTime();
-}
-
-void TextLine::cursor_beg() {
-	cursor = 0;
-	cursor_last_time = glfwGetTime();
 }
 
 void TextLine::update(PackedFont& font) {
@@ -180,8 +98,12 @@ void TextLine::update(PackedFont& font) {
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4* sizeof(GLfloat), 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	
-	cursor_last_time = glfwGetTime();
+
+	/*cout << std::setprecision(3) << std::setw(3);
+	double time = glfwGetTime();
+	int minutes = (int)time;
+	int decimal = (time - minutes)*100;
+	cout << minutes << ":" << decimal << "> line updated" << endl;*/
 
 	dirty = false;
 }

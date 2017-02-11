@@ -22,11 +22,12 @@
 #include <fstream>
 #include <list>
 #include <algorithm>
+#include <iomanip>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#define GLEW_STATIC
+//#define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -52,5 +53,3 @@ const int CHAR_LINE_HEIGHT = 13;
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
-
-// TODO: reference additional headers your program requires here
