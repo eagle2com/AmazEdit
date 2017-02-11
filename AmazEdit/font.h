@@ -17,6 +17,8 @@ struct PackedFont {
 	GLuint texture_id;
 	glm::ivec2 tex_size;
 	Shader* shader;
+	GLuint shader_color_location;
+	GLuint shader_model_location;
 
 	PackedFont();
 	bool load(const std::string& filename, int size);

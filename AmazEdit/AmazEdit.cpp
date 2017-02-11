@@ -64,7 +64,7 @@ void APIENTRY glDebugOutput(GLenum source,
 
 FileBuffer file_buffer;
 
-void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
+void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods) {
     if(action == GLFW_PRESS || action == GLFW_REPEAT) {
         if(key == GLFW_KEY_ESCAPE)  {
             glfwSetWindowShouldClose(window, true);
@@ -76,16 +76,32 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
 			file_buffer.erase();
 		}
 		else if (key == GLFW_KEY_LEFT) {
-			file_buffer.cursor_left();
+			if (mods & GLFW_MOD_SHIFT) {
+				file_buffer.cursor_shift_left();
+			}
+			else
+				file_buffer.cursor_left();
 		}
 		else if (key == GLFW_KEY_RIGHT) {
-			file_buffer.cursor_right();
+			if (mods & GLFW_MOD_SHIFT) {
+				file_buffer.cursor_shift_right();
+			}
+			else
+				file_buffer.cursor_right();
 		}
 		else if (key == GLFW_KEY_UP) {
-			file_buffer.key_up();
+			if (mods & GLFW_MOD_SHIFT) {
+				file_buffer.cursor_shift_up();
+			}
+			else
+				file_buffer.cursor_up();
 		}
 		else if (key == GLFW_KEY_DOWN) {
-			file_buffer.key_down();
+			if (mods & GLFW_MOD_SHIFT) {
+				file_buffer.cursor_shift_down();
+			}
+			else
+				file_buffer.cursor_down();
 		}
 		else if (key == GLFW_KEY_HOME) {
 			file_buffer.cursor_beg();
@@ -94,7 +110,16 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
 			file_buffer.cursor_end();
 		}
 		else if (key == GLFW_KEY_ENTER) {
-			file_buffer.enter();
+			if (mods & GLFW_MOD_CONTROL) {
+				if (mods & GLFW_MOD_SHIFT) {
+					file_buffer.ctrl_shift_enter();
+				}
+				else
+					file_buffer.ctrl_enter();
+			}
+				
+			else
+				file_buffer.enter();
 		}
 		else if (key == GLFW_KEY_TAB) {
 			file_buffer.tab();
@@ -181,8 +206,11 @@ int main(int, const char**)
 
 	main_font.load("C:/Windows/fonts/consola.ttf", 12);
 	main_font.shader = &shader;
+	main_font.shader_color_location = glGetUniformLocation(shader.Program, "textColor");
+	main_font.shader_model_location = glGetUniformLocation(shader.Program, "model");
 
 	file_buffer.cursor_shape.shader = &shape_shader;
+	file_buffer.selection_shape.shader = &shape_shader;
 	file_buffer.load("FileBuffer.cpp");
 
     // Game loop

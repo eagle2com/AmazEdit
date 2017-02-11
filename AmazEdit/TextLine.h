@@ -7,6 +7,8 @@ class TextLine
 {
 public:
 	TextLine();
+	TextLine(const TextLine& other);
+	TextLine(TextLine&& other);
 	~TextLine();
 
 	void draw(PackedFont& font, GLfloat x, GLfloat y);

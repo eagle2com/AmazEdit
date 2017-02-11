@@ -6,10 +6,22 @@ TextLine::TextLine()
 	dirty = true;
 	VAO = 0;
 	VBO = 0;
-
-	
 }
 
+TextLine::TextLine(const TextLine& other) {
+	text = other.text;
+	VAO = 0;
+	VBO = 0;
+	dirty = true;
+}
+
+TextLine::TextLine(TextLine&& other) {
+	VAO = other.VAO;
+	VBO = other.VBO;
+	dirty = other.dirty;
+	text = std::move(other.text);
+	buffer_data = std::move(other.buffer_data);
+}
 
 TextLine::~TextLine()
 {
@@ -21,11 +33,11 @@ void TextLine::draw(PackedFont& font, GLfloat x, GLfloat y) {
 	if (dirty) update(font);
 
 	font.shader->Use();
-	glUniform3f(glGetUniformLocation(font.shader->Program, "textColor"), 1.0f, 1.0f, 1.0f);
+	glUniform3f(font.shader_color_location, 1.0f, 1.0f, 1.0f);
 
 	glm::mat4 model;
 	model = glm::translate(model, { x,y,0 });
-	glUniformMatrix4fv(glGetUniformLocation(font.shader->Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(font.shader_model_location, 1, GL_FALSE, glm::value_ptr(model));
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(VAO);

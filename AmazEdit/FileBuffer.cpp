@@ -2,10 +2,27 @@
 #include "FileBuffer.h"
 
 
-FileBuffer::FileBuffer() : cursor_shape(0, 0, 1, CHAR_LINE_HEIGHT)
+bool operator > (const Cursor& lh, const Cursor& rh) {
+	if (lh.line_n > rh.line_n)
+		return true;
+	else if (lh.line_n == rh.line_n && lh.pos >= rh.pos)
+		return true;
+	else
+		return false;
+}
+
+bool operator < (const Cursor& lh, const Cursor& rh) {
+	return !(lh > rh);
+}
+
+
+FileBuffer::FileBuffer() : 
+	cursor_shape(0.0, 0.0, 1.0, (GLfloat)CHAR_LINE_HEIGHT),
+	selection_shape(0.0, 0.0, 1.0, (GLfloat)CHAR_LINE_HEIGHT)
 {
 	add_line("");
 	cursor_shape.set_fill_color({ 1.0, 1.0, 1.0, 1.0 });
+	selection_shape.set_fill_color({ 1.0, 1.0, 1.0, 0.2 });
 }
 
 
@@ -26,12 +43,24 @@ void FileBuffer::insert(unsigned char c) {
 void FileBuffer::erase() {
 	double time = glfwGetTime();
 	for (auto& cursor : cursors) {	
-		cursor.line->text.erase(cursor.line->text.begin() + cursor.pos);
-		cursor.line->dirty = true;
+		if (cursor.pos >= cursor.line->text.length() - 1) {
+			if (cursor.line_n < lines.size() - 1) {
+				cursor.line++;
+				const std::string text = cursor.line->text;
+				cursor.line = lines.erase(cursor.line);
+				cursor.line--;
+				cursor.line->text.append(text);
+				cursor.line->dirty = true;
+			}
+		}
+		else {
+			cursor.line->text.erase(cursor.line->text.begin() + cursor.pos);
+			cursor.line->dirty = true;
+		}
+		
 		cursor.last_time = time;
 		cursor.max_up_down = -1;
 	}
-	//if (current_line != lines.end()) current_line->erase();
 }
 
 void FileBuffer::backspace() {
@@ -42,14 +71,30 @@ void FileBuffer::backspace() {
 			cursor.pos--;
 			cursor.line->dirty = true;
 		}
+		else {
+			if (cursor.line_n > 0) {
+				std::string text = cursor.line->text;
+				cursor.line = lines.erase(cursor.line);
+				cursor.line--;
+				int previous_length = cursor.line->text.length();
+				cursor.line->text.append(text);
+				cursor.pos = previous_length;
+				cursor.line_n--;
+				cursor.line->dirty = true;
+			}
+		}
 		cursor.last_time = time;
 		cursor.max_up_down = -1;
 	}
 }
 
-void FileBuffer::cursor_left() {
+void FileBuffer::cursor_left(bool cancel_selection) {
 	double time = glfwGetTime();
 	for (auto& cursor : cursors) {
+		if (cursor.sel_end && cancel_selection) {
+			delete cursor.sel_end;
+			cursor.sel_end = nullptr;
+		}
 		cursor.pos--;
 		if (cursor.pos < 0 && cursor.line_n > 0) {
 			cursor.line_n--;
@@ -65,9 +110,13 @@ void FileBuffer::cursor_left() {
 	}
 }
 
-void FileBuffer::cursor_right() {
+void FileBuffer::cursor_right(bool cancel_selection) {
 	double time = glfwGetTime();
 	for (auto& cursor : cursors) {
+		if (cursor.sel_end && cancel_selection) {
+			delete cursor.sel_end;
+			cursor.sel_end = nullptr;
+		}
 		cursor.pos++;
 		if (cursor.pos > cursor.line->text.length()) {
 			if (cursor.line_n < lines.size() - 1) {
@@ -84,6 +133,25 @@ void FileBuffer::cursor_right() {
 		cursor.max_up_down = -1;
 	}
 }
+
+void FileBuffer::cursor_shift_right() {
+	for (auto& cursor : cursors) {
+		if (cursor.sel_end == nullptr) {
+			cursor.sel_end = new Cursor(cursor);
+		}
+	}
+	cursor_right(false);
+}
+
+void FileBuffer::cursor_shift_left() {
+	for (auto& cursor : cursors) {
+		if (cursor.sel_end == nullptr) {
+			cursor.sel_end = new Cursor(cursor);
+		}
+	}
+	cursor_left(false);
+}
+
 
 void FileBuffer::cursor_end() {
 	double time = glfwGetTime();
@@ -135,14 +203,49 @@ void FileBuffer::draw(PackedFont& font) {
 		double time = glfwGetTime();
 		double color = 0.5 + 0.5*cos(M_PI*(time - cursor.last_time));
 		cursor_shape.set_fill_color({ 1.0, 1.0, 1.0, color });
-		cursor_shape.set_position(x_offset + CHAR_ADVANCE * cursor.pos, WINDOW_HEIGHT - CHAR_LINE_HEIGHT*(cursor.line_n+1) - 3); // @HARDCODE: use character advance and size
+		cursor_shape.set_position(
+			x_offset + CHAR_ADVANCE * cursor.pos,
+			WINDOW_HEIGHT - CHAR_LINE_HEIGHT*(cursor.line_n+1 - first_line) - 3); // @HARDCODE: use character advance and size
+
 		cursor_shape.draw();
+
+		if (cursor.sel_end) {
+			const Cursor& c1 = std::min(cursor, *cursor.sel_end);
+			const Cursor& c2 = std::max(cursor, *cursor.sel_end);
+			auto line = c1.line;
+			int pos1 = 0;
+			int pos2 = 0;
+			for (int i = c1.line_n; i <= c2.line_n; i++) {
+				pos1 = 0;
+				pos2 = line->text.length();
+
+				if (i == c1.line_n) {
+					pos1 = c1.pos;
+				}
+				
+				if (i == c2.line_n) {
+					pos2 = c2.pos;
+				}
+				
+				selection_shape.set_position(
+					x_offset + CHAR_ADVANCE * pos1,
+					WINDOW_HEIGHT - CHAR_LINE_HEIGHT*(i + 1 - first_line) - 3);
+
+				selection_shape.set_size(CHAR_ADVANCE*(pos2 - pos1), CHAR_LINE_HEIGHT);
+				selection_shape.draw();
+				line++;
+			}
+		}
 	}
 }
 
-void FileBuffer::key_up() {
+void FileBuffer::cursor_up(bool cancel_selection) {
 	double time = glfwGetTime();
 	for (auto& cursor : cursors) {
+		if (cursor.sel_end && cancel_selection) {
+			delete cursor.sel_end;
+			cursor.sel_end = nullptr;
+		}
 		if (cursor.line_n > 0) {
 			cursor.line_n--;
 			cursor.line--;
@@ -159,9 +262,32 @@ void FileBuffer::key_up() {
 	}
 }
 
-void FileBuffer::key_down() {
+void FileBuffer::cursor_shift_up() {
+	for (auto& cursor : cursors) {
+		if (cursor.sel_end == nullptr) {
+			cursor.sel_end = new Cursor(cursor);
+		}
+	}
+	cursor_up(false);
+}
+
+void FileBuffer::cursor_shift_down() {
+	for (auto& cursor : cursors) {
+		if (cursor.sel_end == nullptr) {
+			cursor.sel_end = new Cursor(cursor);
+		}
+	}
+	cursor_down(false);
+}
+
+
+void FileBuffer::cursor_down(bool cancel_selection) {
 	double time = glfwGetTime();
 	for (auto& cursor : cursors) {
+		if (cursor.sel_end && cancel_selection) {
+			delete cursor.sel_end;
+			cursor.sel_end = nullptr;
+		}
 		if (cursor.line_n < lines.size() - 1) {
 			cursor.line_n++;
 			cursor.line++;
@@ -179,14 +305,17 @@ void FileBuffer::key_down() {
 }
 
 void FileBuffer::tab() {
+	double time = glfwGetTime();
 	for (auto& cursor : cursors) {
 		cursor.line->text.insert(cursor.pos, "    ");
 		cursor.pos += 4;
 		cursor.line->dirty = true;
+		cursor.last_time = time;
 	}
 }
 
 void FileBuffer::enter() {
+	double time = glfwGetTime();
 	for (auto& cursor : cursors) {
 		std::string text = cursor.line->text.substr(cursor.pos);
 		cursor.line->text.erase(cursor.pos, cursor.line->text.length() - cursor.pos);
@@ -196,6 +325,31 @@ void FileBuffer::enter() {
 		cursor.line->dirty = true;
 		cursor.line_n++;
 		cursor.pos = 0;
+		cursor.last_time = time;
+	}
+}
+
+void FileBuffer::ctrl_enter() {
+	double time = glfwGetTime();
+	for (auto& cursor : cursors) {
+		cursor.line = lines.insert(++cursor.line, TextLine());
+		cursor.line->text = "";
+		cursor.line->dirty = true;
+		cursor.line_n++;
+		cursor.pos = 0;
+		cursor.last_time = time;
+	}
+}
+
+void FileBuffer::ctrl_shift_enter() {
+	double time = glfwGetTime();
+	for (auto& cursor : cursors) {
+		cursor.line = lines.insert(cursor.line, TextLine());
+		cursor.line->text = "";
+		cursor.line->dirty = true;
+		cursor.line_n;
+		cursor.pos = 0;
+		cursor.last_time = time;
 	}
 }
 
